@@ -1,0 +1,72 @@
+{
+  "features": [
+    "population_density_sqkm",
+    "water_logging_risk_index",
+    "sanitation_score",
+    "city_code",
+    "month",
+    "rain_lag1",
+    "rain_lag2",
+    "rain_lag3",
+    "rain_lag4",
+    "rain_lag5",
+    "rain_lag6",
+    "rain_sum2w",
+    "rain_sum4w",
+    "rain_sum6w",
+    "rain_sum_lag2_4",
+    "avg_temp_c_lag1",
+    "avg_temp_c_lag2",
+    "avg_temp_c_lag3",
+    "avg_temp_c_lag4",
+    "avg_temp_c_mean4w",
+    "relative_humidity_pct_lag1",
+    "relative_humidity_pct_lag2",
+    "relative_humidity_pct_lag3",
+    "relative_humidity_pct_lag4",
+    "relative_humidity_pct_mean4w",
+    "week_sin",
+    "week_cos"
+  ],
+  "target": "y_2_4w",
+  "tier_cutoffs": [
+    3.193746566772461,
+    22.25349998474121,
+    33.633995056152344
+  ],
+  "metrics": {
+    "val": {
+      "model": {
+        "MAE": 2.2405062921008185,
+        "RMSE": 4.397392399563345
+      },
+      "climatology_baseline": {
+        "MAE": 3.097476791821681,
+        "RMSE": 6.00519375388777
+      },
+      "persistence_baseline": {
+        "MAE": 5.946349206349207,
+        "RMSE": 11.408879860991599
+      }
+    },
+    "test": {
+      "model": {
+        "MAE": 2.7534668084903386,
+        "RMSE": 5.229947105362044
+      },
+      "climatology_baseline": {
+        "MAE": 3.3393082292879277,
+        "RMSE": 5.929056610473991
+      },
+      "persistence_baseline": {
+        "MAE": 5.800347222222222,
+        "RMSE": 10.322356400874108
+      }
+    }
+  },
+  "split": {
+    "train_end": "2022-12-31",
+    "val_end": "2024-12-31",
+    "purge_weeks": 4
+  }
+}
