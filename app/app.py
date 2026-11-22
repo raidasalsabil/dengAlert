@@ -1,7 +1,7 @@
 """dengAlert dashboard: ward-level dengue risk 2-4 weeks ahead.
 
-Run from the project root:  streamlit run app/app.py
-No external API calls: everything runs locally from a saved model.
+Run from the project root:  python -m streamlit run app/app.py
+Runs fully locally from a serialized model: no API calls.
 """
 import json
 import sys
@@ -22,7 +22,6 @@ from src.risk import TIERS, to_tier  # noqa: E402
 MODEL_PATH = ROOT / "models" / "model.joblib"
 META_PATH = ROOT / "models" / "meta.json"
 FEATURES_PATH = ROOT / "data" / "processed" / "features.parquet"
-EVAL_PATH = ROOT / "data" / "processed" / "eval_predictions.parquet"
 
 TIER_COLORS = {"Low": "#2e7d32", "Medium": "#f9a825", "High": "#ef6c00", "Critical": "#c62828"}
 NICE = {
@@ -54,7 +53,7 @@ def load_model():
 
 @st.cache_data
 def load_data():
-    """Load features once and score every complete row in one fast batch."""
+    """Load features once and score every complete row in one batch."""
     model, meta = load_model()
     df = pd.read_parquet(FEATURES_PATH)
     cols = meta["features"]
@@ -67,7 +66,7 @@ def load_data():
 
 
 def contributions(model, row: pd.DataFrame, cols):
-    """Per-feature push on the (log) prediction, using XGBoost's built-in SHAP values."""
+    """Per-feature push on the (log) prediction, via XGBoost's built-in SHAP values."""
     dm = xgb.DMatrix(row[cols], feature_names=cols)
     best = getattr(model, "best_iteration", None)
     rng = (0, best + 1) if best is not None else (0, 0)
@@ -80,10 +79,10 @@ def badge(tier: str) -> str:
             f"border-radius:10px;font-size:28px;font-weight:700;text-align:center'>{tier}</div>")
 
 
-st.set_page_config(page_title="dengAlert", page_icon="🦟", layout="wide")
-st.title("🦟 dengAlert: dengue early warning")
-st.caption("Predicts dengue cases in the next 2-4 weeks for each ward, from lagged rainfall, "
-           "temperature, humidity and ward vulnerability.")
+st.set_page_config(page_title="dengAlert", layout="wide")
+st.title("dengAlert: dengue early warning")
+st.caption("Predicts dengue cases per ward in the 2-4 weeks after a chosen date, "
+           "from lagged rainfall, temperature, humidity and ward vulnerability.")
 
 if not (MODEL_PATH.exists() and FEATURES_PATH.exists()):
     st.error("Model or features missing. Run `python -m src.train` first.")
@@ -91,32 +90,34 @@ if not (MODEL_PATH.exists() and FEATURES_PATH.exists()):
 
 model, meta = load_model()
 cols = meta["features"]
+sp = meta["split"]
+cut = meta["tier_cutoffs"]
 data = load_data()
 scored = data.dropna(subset=["pred"])
 
-# ---------------- Sidebar inputs ----------------
+# ---------------- Inputs ----------------
 st.sidebar.header("Select area and time")
 city = st.sidebar.selectbox("City", sorted(data["city"].unique()))
-wards = sorted(data.loc[data["city"] == city, "ward_id"].unique())
-ward = st.sidebar.selectbox("Ward", wards)
+ward = st.sidebar.selectbox("Ward", sorted(data.loc[data["city"] == city, "ward_id"].unique()))
 ward_rows = scored[scored["ward_id"] == ward].sort_values("date")
 dates = ward_rows["date"].dt.date.tolist()
-# open on the highest-risk week of the latest year so the demo is informative
 last_year = scored[scored["date"] > scored["date"].max() - pd.Timedelta(weeks=52)]
 peak = last_year.groupby("date")["pred"].mean().idxmax().date()
 sel_date = st.sidebar.select_slider("Forecast date (week starting)", options=dates,
                                     value=peak if peak in dates else dates[-1])
 sel_ts = pd.Timestamp(sel_date)
-st.sidebar.info("The forecast covers the 2-4 weeks AFTER the chosen date, using only weather "
-                "known up to that date.")
+st.sidebar.info("The forecast covers the 2-4 weeks AFTER this date, using only weather "
+                "known up to this date.")
+st.sidebar.caption(f"Risk tiers by predicted cases: Low < {cut[0]:.1f} | Medium < {cut[1]:.1f} | "
+                   f"High < {cut[2]:.1f} | Critical above.")
 
 row = ward_rows[ward_rows["date"] == sel_ts]
 pred = float(row["pred"].iloc[0])
 tier = str(row["tier"].iloc[0])
 
-tab1, tab2, tab3 = st.tabs(["Ward forecast", "All wards", "Model validation"])
+tab1, tab2, tab3 = st.tabs(["Ward forecast", "City overview", "Model accuracy"])
 
-# ---------------- Tab 1: ward forecast ----------------
+# ---------------- Tab 1: forecast + drivers ----------------
 with tab1:
     start, end = sel_ts + pd.Timedelta(weeks=2), sel_ts + pd.Timedelta(weeks=4)
     c1, c2, c3 = st.columns([1, 1, 2])
@@ -125,10 +126,14 @@ with tab1:
     c3.write(f"**{ward}** ({city})  \nWindow: **{start:%d %b %Y} to {end:%d %b %Y}**")
     actual = row["y_2_4w"].iloc[0]
     if pd.notna(actual):
-        c3.write(f"Actual cases in that window (known from history): **{actual:.0f}**")
+        c3.write(f"Actual cases in that window: **{actual:.0f}**")
+    if sel_ts <= pd.Timestamp(sp["train_end"]):
+        st.caption("This date is in the training period, so the model has seen the outcome. "
+                   "Pick a 2025 date for an honest forecast.")
+    elif sel_ts <= pd.Timestamp(sp["val_end"]):
+        st.caption("This date is in the validation period (2023-2024).")
 
     left, right = st.columns(2)
-
     with left:
         st.subheader("Main drivers of this forecast")
         contrib = contributions(model, row, cols)
@@ -140,29 +145,23 @@ with tab1:
         fig.update_layout(height=380, margin=dict(l=0, r=0, t=10, b=0),
                           xaxis_title="Effect on risk (red raises, blue lowers)")
         st.plotly_chart(fig)
-
     with right:
-        st.subheader("Rainfall that drives this window")
-        hist = data[(data["ward_id"] == ward) & (data["date"] <= sel_ts)].tail(14)
-        fig2 = px.bar(hist, x="date", y="rainfall_mm", labels={"rainfall_mm": "Rainfall (mm)", "date": ""})
-        fig2.add_vline(x=(sel_ts - pd.Timedelta(weeks=3)).timestamp() * 1000, line_dash="dash",
-                       annotation_text="3 wks ago (peak lag)")
-        fig2.update_layout(height=380, margin=dict(l=0, r=0, t=10, b=0))
-        st.plotly_chart(fig2)
-
-    st.subheader("Weather lags used for this forecast")
-    lag_tbl = pd.DataFrame({
-        "Weeks before forecast date": [1, 2, 3, 4],
-        "Rainfall (mm)": [row[f"rain_lag{k}"].iloc[0] for k in (1, 2, 3, 4)],
-        "Avg temp (C)": [row[f"avg_temp_c_lag{k}"].iloc[0] for k in (1, 2, 3, 4)],
-        "Humidity (%)": [row[f"relative_humidity_pct_lag{k}"].iloc[0] for k in (1, 2, 3, 4)],
-    })
-    st.dataframe(lag_tbl.round(2), hide_index=True)
+        st.subheader("Weather lags used")
+        lag_tbl = pd.DataFrame({
+            "Weeks before date": [1, 2, 3, 4],
+            "Rainfall (mm)": [row[f"rain_lag{k}"].iloc[0] for k in (1, 2, 3, 4)],
+            "Avg temp (C)": [row[f"avg_temp_c_lag{k}"].iloc[0] for k in (1, 2, 3, 4)],
+            "Humidity (%)": [row[f"relative_humidity_pct_lag{k}"].iloc[0] for k in (1, 2, 3, 4)],
+        })
+        st.dataframe(lag_tbl.round(2), hide_index=True)
+        st.caption(f"Rain last 2 / 4 / 6 weeks: {row['rain_sum2w'].iloc[0]:.0f} / "
+                   f"{row['rain_sum4w'].iloc[0]:.0f} / {row['rain_sum6w'].iloc[0]:.0f} mm")
 
     st.subheader("Recent cases and forecast")
     recent = data[(data["ward_id"] == ward) & (data["date"] <= sel_ts)].tail(26)
     fig3 = go.Figure()
-    fig3.add_trace(go.Scatter(x=recent["date"], y=recent["dengue_cases"], name="Weekly cases", mode="lines+markers"))
+    fig3.add_trace(go.Scatter(x=recent["date"], y=recent["dengue_cases"], name="Weekly cases",
+                              mode="lines+markers"))
     fig3.add_trace(go.Scatter(x=[start, end], y=[pred / 3, pred / 3], name="Forecast (avg per week)",
                               mode="lines+markers", line=dict(color=TIER_COLORS[tier], width=4)))
     fig3.update_layout(height=320, margin=dict(l=0, r=0, t=10, b=0), yaxis_title="Cases per week")
@@ -177,15 +176,15 @@ with tab2:
     snap = snap.sort_values(["tier", "pred"], ascending=False).rename(
         columns={"pred": "predicted cases (2-4 wks)"})
     counts = snap["tier"].value_counts().reindex(TIERS).fillna(0).astype(int)
-    cc = st.columns(4)
-    for c, t in zip(cc, TIERS):
-        c.markdown(f"<div style='color:{TIER_COLORS[t]};font-weight:700'>{t}</div>", unsafe_allow_html=True)
+    for c, t in zip(st.columns(4), TIERS):
+        c.markdown(f"<div style='color:{TIER_COLORS[t]};font-weight:700'>{t}</div>",
+                   unsafe_allow_html=True)
         c.metric("wards", int(counts[t]), label_visibility="collapsed")
     st.dataframe(snap, hide_index=True)
 
-    st.subheader(f"Risk heatmap: {city}, last 20 weeks up to the selected date")
-    hm = scored[(scored["city"] == city) & (scored["date"] <= sel_ts)]
-    hm = hm[hm["date"] > sel_ts - pd.Timedelta(weeks=20)]
+    st.subheader(f"Risk heatmap: {city}, last 20 weeks")
+    hm = scored[(scored["city"] == city) & (scored["date"] <= sel_ts)
+                & (scored["date"] > sel_ts - pd.Timedelta(weeks=20))]
     pivot = hm.pivot(index="ward_id", columns="date", values="pred")
     fig4 = px.imshow(pivot.values, x=[d.strftime("%d %b %y") for d in pivot.columns], y=pivot.index,
                      color_continuous_scale="YlOrRd", aspect="auto",
@@ -195,7 +194,6 @@ with tab2:
 
 # ---------------- Tab 3: validation ----------------
 with tab3:
-    sp = meta["split"]
     st.subheader("Chronological validation (no shuffling)")
     st.write(f"Trained on data up to **{sp['train_end']}** (minus a {sp['purge_weeks']}-week purge), "
              f"tuned on 2023-2024, tested on **2025**, which the model never saw.")
@@ -203,16 +201,7 @@ with tab3:
     for split in ("val", "test"):
         for name, m in meta["metrics"][split].items():
             rows.append({"split": "Validation 2023-24" if split == "val" else "Test 2025",
-                         "model": name.replace("_", " "), "MAE": round(m["MAE"], 2), "RMSE": round(m["RMSE"], 2)})
+                         "model": name.replace("_", " "),
+                         "MAE": round(m["MAE"], 2), "RMSE": round(m["RMSE"], 2)})
     st.dataframe(pd.DataFrame(rows), hide_index=True)
     st.caption("MAE/RMSE are in cases per 2-4 week window per ward. Lower is better.")
-
-    if EVAL_PATH.exists():
-        ev = pd.read_parquet(EVAL_PATH)
-        w = ev[ev["ward_id"] == ward].sort_values("date")
-        fig5 = go.Figure()
-        fig5.add_trace(go.Scatter(x=w["date"], y=w["y_2_4w"], name="Actual"))
-        fig5.add_trace(go.Scatter(x=w["date"], y=w["predicted"], name="Predicted"))
-        fig5.update_layout(height=350, title=f"Predicted vs actual: {ward}",
-                           margin=dict(l=0, r=0, t=40, b=0), yaxis_title="Cases in 2-4 week window")
-        st.plotly_chart(fig5)
