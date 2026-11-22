@@ -79,8 +79,8 @@ def badge(tier: str) -> str:
             f"border-radius:10px;font-size:28px;font-weight:700;text-align:center'>{tier}</div>")
 
 
-st.set_page_config(page_title="dengAlert", layout="wide")
-st.title("dengAlert: dengue early warning")
+st.set_page_config(page_title="dengueAlert", layout="wide")
+st.title("dengueAlert: dengue early warning")
 st.caption("Predicts dengue cases per ward in the 2-4 weeks after a chosen date, "
            "from lagged rainfall, temperature, humidity and ward vulnerability.")
 
