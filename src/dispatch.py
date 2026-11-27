@@ -14,7 +14,7 @@ def _out_lines(ward_id, transfers):
 def sms(r, week, transfers=None):
     t = (f"DENGUE ALERT {week} {r.ward_id} ({r.city}) Risk:{r.tier} Cases:{r.pred_cases:.0f} "
          f"Saline {r.saline_allocated}/{r.saline_bags_needed} Kits {r.kits_allocated}/"
-         f"{r.diagnostic_kits_needed} Beds {r.beds_allocated}/{r.hospital_beds_required} "
+         f"{r.diagnostic_kits_needed} Beds need {r.hospital_beds_required} cap {r.dengue_bed_capacity} "
          f"Crews {r.crews_assigned}/{r.crews_needed}")
     if r.alert != "OK":
         t += f" DEFICIT:{r.deficit_items}"
@@ -31,7 +31,7 @@ def whatsapp(r, week, transfers=None):
     s += (f"Risk: *{r.tier}*\nPredicted cases: {r.pred_cases:.0f}\n"
           f"Saline: {r.saline_allocated} allocated / {r.saline_bags_needed} required\n"
           f"Test kits: {r.kits_allocated} / {r.diagnostic_kits_needed}\n"
-          f"Beds: {r.beds_allocated} / {r.hospital_beds_required}\n"
+          f"Beds: need {r.hospital_beds_required}, ward capacity {r.dengue_bed_capacity}\n"
           f"Spray teams assigned: {r.crews_assigned} (required {r.crews_needed})")
     out = _out_lines(r.ward_id, transfers)
     if out:
@@ -46,14 +46,17 @@ td,th{border:1px solid #999;padding:5px;text-align:left}th{background:#eee}.bad{
 <h1>Dengue Commissioner Brief: {{ city }}</h1>
 <p>Forecast from {{ week }} (window +2 to +4 weeks) | Generated {{ today }} | Offline template, no external services</p>
 <button onclick="window.print()">Print / Save as PDF</button>
-<table><tr><th>Ward</th><th>Tier</th><th>Pred. cases</th><th>Saline</th><th>Kits</th><th>Beds</th>
-<th>Spray teams</th><th>Alert</th><th>Overflow routing</th></tr>
+<table><tr><th>Ward</th><th>Tier</th><th>Pred. cases</th><th>Saline<br>allocated / required</th>
+<th>Kits<br>allocated / required</th><th>Spray teams<br>assigned / required</th>
+<th>Beds<br>need / ward capacity</th><th>Overflow routing</th><th>Deficit alert</th></tr>
 {% for r in rows %}<tr class="{{ r.tier }}"><td>{{ r.ward_id }}</td><td>{{ r.tier }}</td><td>{{ '%.0f'|format(r.pred_cases) }}</td>
-<td>{{ r.saline_allocated }}/{{ r.saline_bags_needed }}</td><td>{{ r.kits_allocated }}/{{ r.diagnostic_kits_needed }}</td>
-<td>{{ r.beds_allocated }}/{{ r.hospital_beds_required }}</td><td>{{ r.crews_assigned }}/{{ r.crews_needed }}</td>
-<td class="{{ 'bad' if r.alert!='OK' else '' }}">{{ r.alert }}{% if r.deficit_items %}<br>{{ r.deficit_items }}{% endif %}</td>
-<td>{{ route[r.ward_id] }}</td></tr>{% endfor %}</table>
-<p>Format: allocated / required. Tiers are percentile-based model outputs.</p></body></html>""")
+<td>{{ r.saline_allocated }} / {{ r.saline_bags_needed }}</td>
+<td>{{ r.kits_allocated }} / {{ r.diagnostic_kits_needed }}</td>
+<td>{{ r.crews_assigned }} / {{ r.crews_needed }}</td>
+<td>{{ r.hospital_beds_required }} / {{ r.dengue_bed_capacity }}</td>
+<td>{{ route[r.ward_id] }}</td>
+<td class="{{ 'bad' if r.alert != 'OK' else '' }}">{{ r.alert }}{% if r.deficit_items %}<br>{{ r.deficit_items }}{% endif %}</td></tr>{% endfor %}</table>
+<p>Saline, kits and spray teams show allocated / required. Beds show predicted need / the ward's dengue bed capacity; beds are not affected by stock or crew settings. Overflow patients are routed to the least-utilized ward in the same city. Tiers are percentile-based model outputs.</p></body></html>""")
 
 
 def brief_html(alloc, city, week, transfers=None):

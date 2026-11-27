@@ -76,3 +76,31 @@ def test_each_region_uses_only_its_own_pool():
         assert g.crews_assigned.sum() <= crews
     g = a[a.city == "Gazipur"]
     assert (g.saline_deficit == 0).all()          # 100% stock -> fully served
+
+
+
+
+def test_beds_do_not_depend_on_sliders():
+    fc, cap = make()
+    a1 = allocate(fc, cap, 30, 0).set_index("ward_id")
+    a2 = allocate(fc, cap, 100, 999).set_index("ward_id")
+    for col in ("hospital_beds_required", "dengue_bed_capacity"):
+        assert (a1[col] == a2[col]).all()
+    w1, t1, c1 = route_overflow(allocate(fc, cap, 30, 0))
+    w2, t2, c2 = route_overflow(allocate(fc, cap, 100, 999))
+    assert t1.equals(t2) and c1.equals(c2)
+
+
+def test_overflow_goes_to_least_utilized_ward():
+    fc = pd.DataFrame({"ward_id": ["A", "B", "C", "D"], "city": ["X"] * 4,
+                       "pred_cases": [90.0, 30.0, 60.0, 30.0],
+                       "population_density_sqkm": 1e4, "tier": "High"})
+    cap = pd.DataFrame({"ward_id": list("ABCD"), "total_hospital_beds": 50,
+                        "dengue_bed_capacity": [2, 10, 10, 5]})
+    a = allocate(fc, cap, 100, 0)
+    w, tr, c = route_overflow(a)
+    req = a.set_index("ward_id").hospital_beds_required
+    util = {i: req[i] / cap.set_index("ward_id").dengue_bed_capacity[i] for i in "BCD"}
+    first = tr.sort_values("patients", ascending=False).iloc[0].to_ward
+    assert first == min(util, key=util.get)       # most patients to the least-utilized ward
+    assert (tr.from_ward == "A").all()

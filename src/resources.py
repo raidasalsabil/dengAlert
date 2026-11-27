@@ -39,12 +39,13 @@ def _fill(need: pd.Series, order, pool: int) -> pd.Series:
 
 
 def allocate(fc: pd.DataFrame, capacity: pd.DataFrame, stock_pct: float, total_crews: int):
-    """stock_pct 30-100.
-    Saline/kits: regional pool = stock% of total demand.
-    Beds: usable dengue beds = stock% of each ward's dengue_bed_capacity.
-    Crews: a fixed pool of total_crews."""
+    """stock_pct 30-100 scales ONLY the saline and kit pools; total_crews is the crew pool.
+    Beds are NOT allocated here: bed need vs each ward's dengue_bed_capacity (from the
+    capacity file) is handled by overflow routing and never depends on any slider."""
     d = compute_demand(fc).merge(capacity, on="ward_id", how="left")
-    d["dengue_bed_capacity"] = d.dengue_bed_capacity.fillna(1)
+    if d.dengue_bed_capacity.isna().any():
+        missing = d.loc[d.dengue_bed_capacity.isna(), "ward_id"].tolist()
+        raise ValueError(f"No bed capacity in the capacity file for wards: {missing}")
     s = stock_pct / 100.0
     d = d.sort_values("priority", ascending=False).reset_index(drop=True)
     order = d.index
@@ -52,21 +53,16 @@ def allocate(fc: pd.DataFrame, capacity: pd.DataFrame, stock_pct: float, total_c
                       ("diagnostic_kits_needed", "kits_allocated")):
         d[got] = _fill(d[need], order, int(np.floor(d[need].sum() * s)))
     d["crews_assigned"] = _fill(d["crews_needed"], order, int(total_crews))
-    d["bed_capacity_eff"] = np.floor(d.dengue_bed_capacity * s).astype(int)
-    d["beds_allocated"] = np.minimum(d.hospital_beds_required, d.bed_capacity_eff)
 
     d["saline_deficit"] = d.saline_bags_needed - d.saline_allocated
     d["kits_deficit"] = d.diagnostic_kits_needed - d.kits_allocated
     d["crew_deficit"] = d.crews_needed - d.crews_assigned
-    d["beds_deficit"] = d.hospital_beds_required - d.beds_allocated
-
-    supply_short = (d.saline_deficit > 0) | (d.kits_deficit > 0) | (d.crew_deficit > 0)
-    d["alert"] = np.select([supply_short, d.beds_deficit > 0],
-                           ["CRITICAL SUPPLY DEFICIT", "BED SURGE - ROUTE OVERFLOW"], "OK")
+    short = (d.saline_deficit > 0) | (d.kits_deficit > 0) | (d.crew_deficit > 0)
+    d["alert"] = np.where(short, "CRITICAL SUPPLY DEFICIT", "OK")
     items = []
     for r in d.itertuples():
         x = [n for n, v in (("saline", r.saline_deficit), ("kits", r.kits_deficit),
-                            ("crews", r.crew_deficit), ("beds", r.beds_deficit)) if v > 0]
+                            ("crews", r.crew_deficit)) if v > 0]
         items.append(", ".join(x))
     d["deficit_items"] = items
     return d

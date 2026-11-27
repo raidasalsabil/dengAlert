@@ -47,39 +47,57 @@ def render_ops(fc: pd.DataFrame, model, meta: dict, week_label: str, region: str
     with t1:
         n_def = int((alloc.alert == "CRITICAL SUPPLY DEFICIT").sum())
         if n_def:
-            st.error(f"CRITICAL SUPPLY DEFICIT in {n_def} of {len(alloc)} {region} wards: demand "
-                     f"cannot be fully met at {stock}% stock and {crews_total} crews.")
+            st.error(f"CRITICAL SUPPLY DEFICIT in {n_def} of {len(alloc)} {region} wards: saline, "
+                     f"kits or crews cannot be fully supplied at {stock}% stock and "
+                     f"{crews_total} crews.")
         else:
-            st.success(f"{region}: all supply and crew demand is fully met.")
+            st.success(f"{region}: all saline, kit and crew demand is fully met.")
         m = st.columns(4)
-        for col, (lab, a, n) in zip(m, [("Saline", "saline_allocated", "saline_bags_needed"),
-                                        ("Kits", "kits_allocated", "diagnostic_kits_needed"),
-                                        ("Beds", "beds_allocated", "hospital_beds_required"),
-                                        ("Crews", "crews_assigned", "crews_needed")]):
-            col.metric(f"{lab} allocated / required", f"{int(alloc[a].sum())} / {int(alloc[n].sum())}")
+        for col, (lab, a_, n_) in zip(m[:3], [("Saline", "saline_allocated", "saline_bags_needed"),
+                                              ("Kits", "kits_allocated", "diagnostic_kits_needed"),
+                                              ("Crews", "crews_assigned", "crews_needed")]):
+            col.metric(f"{lab} allocated / required", f"{int(alloc[a_].sum())} / {int(alloc[n_].sum())}")
+        m[3].metric("Beds required / ward capacity",
+                    f"{int(alloc.hospital_beds_required.sum())} / {int(alloc.dengue_bed_capacity.sum())}",
+                    help="Beds do not depend on the sliders. See Overflow routing.")
         st.dataframe(alloc[["ward_id", "tier", "pred_cases", "population_density_sqkm",
                             "saline_allocated", "saline_bags_needed", "kits_allocated",
-                            "diagnostic_kits_needed", "beds_allocated", "hospital_beds_required",
-                            "crews_assigned", "crews_needed", "alert", "deficit_items"]]
-                     .round(1), hide_index=True)
-        st.caption(f"{region} wards are served from {region}'s own stock, in priority order: "
-                   "risk tier x predicted cases x crowding.")
+                            "diagnostic_kits_needed", "crews_assigned", "crews_needed",
+                            "hospital_beds_required", "dengue_bed_capacity", "alert",
+                            "deficit_items"]].round(1), hide_index=True)
+        st.caption(f"{region} wards are served from {region}'s own saline and kit stock, in "
+                   "priority order: risk tier x predicted cases x crowding. The sliders do not "
+                   "change beds.")
 
     with t2:
-        st.subheader(f"{region}: bed utilization")
+        st.subheader(f"{region}: city-wide bed utilization")
         st.dataframe(city_all[city_all.city == region], hide_index=True)
+        w = wards_all[wards_all.city == region]
         u = int(city_all.loc[city_all.city == region, "unplaced"].iloc[0])
         if u > 0:
-            st.error(f"{u} patients cannot be placed: every {region} ward is at capacity. "
-                     "Routing never crosses city borders. Escalate for emergency beds.")
-        st.subheader("Wards over local capacity (net deficit)")
-        w = wards_all[wards_all.city == region]
-        st.dataframe(w[w.net_deficit > 0][["ward_id", "hospital_beds_required", "bed_capacity_eff",
-                     "net_deficit", "sent", "unplaced"]], hide_index=True)
-        st.subheader("Patient transfers (within this city)")
-        st.dataframe(transfers_all[transfers_all.city == region], hide_index=True)
-        st.subheader("Receiving wards")
-        st.dataframe(w[w.received > 0][["ward_id", "received", "headroom_left"]], hide_index=True)
+            st.error(f"{u} patients cannot be placed: no {region} ward has a free bed left. "
+                     "Routing never crosses city borders.")
+        elif (w.net_deficit > 0).any():
+            st.success("All overflow patients were routed to wards in the same city.")
+        else:
+            st.success(f"No {region} ward exceeds its bed capacity, so no routing is needed.")
+        st.subheader("Net ward deficits (demand above local capacity)")
+        over = w[w.net_deficit > 0]
+        if over.empty:
+            st.info("None.")
+        else:
+            st.dataframe(over[["ward_id", "hospital_beds_required", "dengue_bed_capacity",
+                               "net_deficit", "sent", "unplaced"]], hide_index=True)
+        st.subheader("Patient transfers (to the least-utilized ward in this city)")
+        tr = transfers_all[transfers_all.city == region]
+        if tr.empty:
+            st.info("No transfers.")
+        else:
+            st.dataframe(tr, hide_index=True)
+        st.subheader(f"All {region} wards: bed load before and after routing")
+        st.dataframe(w[["ward_id", "hospital_beds_required", "dengue_bed_capacity",
+                        "utilization_before_pct", "sent", "received", "final_load",
+                        "utilization_after_pct", "headroom_left"]], hide_index=True)
         with st.expander("All regions: bed utilization"):
             st.dataframe(city_all, hide_index=True)
 
