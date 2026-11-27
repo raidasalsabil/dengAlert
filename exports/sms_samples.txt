@@ -1,0 +1,10 @@
+DENGUE ALERT 2025-06-16 DSCC_Ward_04 (Dhaka South) Risk:Critical Cases:57 Saline 137/137 Kits 67/67 Beds 6/6 Crews 3/3
+DENGUE ALERT 2025-06-16 DNCC_Ward_12 (Dhaka North) Risk:Critical Cases:54 Saline 128/128 Kits 63/63 Beds 2/6 Crews 3/3 DEFICIT:beds
+DENGUE ALERT 2025-06-16 CCC_Ward_03 (Chattogram) Risk:Critical Cases:56 Saline 133/133 Kits 65/65 Beds 6/6 Crews 3/3
+DENGUE ALERT 2025-06-16 CCC_Ward_01 (Chattogram) Risk:Critical Cases:55 Saline 132/132 Kits 65/65 Beds 6/6 Crews 3/3
+DENGUE ALERT 2025-06-16 DNCC_Ward_18 (Dhaka North) Risk:Critical Cases:55 Saline 132/132 Kits 65/65 Beds 2/6 Crews 3/3 DEFICIT:beds
+DENGUE ALERT 2025-06-16 DSCC_Ward_06 (Dhaka South) Risk:Critical Cases:53 Saline 127/127 Kits 62/62 Beds 6/6 Crews 3/3
+DENGUE ALERT 2025-06-16 DNCC_Ward_19 (Dhaka North) Risk:Critical Cases:52 Saline 123/123 Kits 60/60 Beds 2/6 Crews 3/3 DEFICIT:beds
+DENGUE ALERT 2025-06-16 DSCC_Ward_10 (Dhaka South) Risk:Critical Cases:50 Saline 120/120 Kits 59/59 Beds 5/5 Crews 3/3
+DENGUE ALERT 2025-06-16 DSCC_Ward_19 (Dhaka South) Risk:Critical Cases:50 Saline 119/119 Kits 58/58 Beds 5/5 Crews 3/3
+DENGUE ALERT 2025-06-16 GCC_Ward_01 (Gazipur) Risk:Critical Cases:42 Saline 101/101 Kits 49/49 Beds 5/5 Crews 3/3

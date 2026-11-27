@@ -1,0 +1,12 @@
+{
+  "saline_per_case": 2.3820274521018017,
+  "kits_per_case": 1.1593651701458394,
+  "beds_per_weekly_case": 0.2912353445810695,
+  "week_share": {
+    "2": 0.33332929640349923,
+    "3": 0.3333333333333333,
+    "4": 0.33333737026316745
+  },
+  "fit_rows": 7026,
+  "source": "ratio of sums over weeks with >= 5 cases"
+}
