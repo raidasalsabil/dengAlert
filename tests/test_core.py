@@ -64,3 +64,15 @@ def test_simulator_monotone_and_ranked():
     res = simulate(cur, fc, plan, CUT)
     assert (res.cases_prevented >= -1e-9).all()
     assert res.roi.is_monotonic_decreasing
+
+def test_each_region_uses_only_its_own_pool():
+    from src.resources import allocate_regions
+    fc, cap = make()
+    settings = {"Dhaka North": (30, 2), "Gazipur": (100, 5)}
+    a = allocate_regions(fc, cap, settings)
+    for city, (stock, crews) in settings.items():
+        g = a[a.city == city]
+        assert g.saline_allocated.sum() <= int(g.saline_bags_needed.sum() * stock / 100)
+        assert g.crews_assigned.sum() <= crews
+    g = a[a.city == "Gazipur"]
+    assert (g.saline_deficit == 0).all()          # 100% stock -> fully served
