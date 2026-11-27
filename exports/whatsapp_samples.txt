@@ -73,7 +73,7 @@ Risk: *Critical*
 Predicted cases: 52
 Saline: 123 allocated / 123 required
 Test kits: 60 / 60
-Beds: 1 / 6
+Beds: 2 / 6
 Spray teams assigned: 3 (required 3)
 
 ------
