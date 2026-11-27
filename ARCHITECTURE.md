@@ -164,24 +164,30 @@ The simulator makes two model calls per evaluation. `best_deployment` calls it o
 
 ## 9. Repository layout
 
-```
-app/app.py                 Streamlit dashboard (7 tabs)
-src/features.py            lag and target pipeline
-src/risk.py                tier mapping
-src/train.py               chronological split, training, metrics
-src/config.py              Phase 2 planning assumptions
-src/allocation.py          demand conversion + constrained allocation
-src/overflow.py            intra-city bed overflow routing
-src/simulator.py           model-driven what-if simulator
-src/dispatch.py            SMS / WhatsApp / HTML / PDF notices
-src/offline_check.py       offline kill-switch rehearsal
-tests/test_phase2.py       unit and offline tests
-models/                    model.joblib, meta.json
-data/processed/            features.parquet, eval_predictions.parquet
-data/                      ward_bed_capacity.xlsx / .csv
-exports/                   sample dispatch notices
-ARCHITECTURE.md            this file
-```
+├── notebooks/
+├── src/
+│   ├── __pycache__/
+│   ├── __init__.py
+│   ├── calibrate.py
+│   ├── capacity.py
+│   ├── config.py
+│   ├── dispatch.py
+│   ├── features.py
+│   ├── forecast.py
+│   ├── make_exports.py
+│   ├── overflow.py
+│   ├── resources.py
+│   ├── risk.py
+│   ├── simulator.py
+│   └── train.py
+├── tests/
+│   ├── __pycache__/
+│   └── test_core.py
+├── .gitignore
+├── ARCHITECTURE.md
+├── main-rai.py
+├── README.md
+└── requirements.txt
 
 ## 10. AI disclosure
 
