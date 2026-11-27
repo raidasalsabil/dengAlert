@@ -11,43 +11,35 @@ from src.resources import allocate_regions
 from src.simulator import case_curve, optimal_deployment, roi_ranking, simulate
 
 
-def render_ops(fc: pd.DataFrame, model, meta: dict, week_label: str):
-    """fc: one row per ward for the chosen date (features + pred_cases + tier + city)."""
+def render_ops(fc: pd.DataFrame, model, meta: dict, week_label: str, region: str):
+    """fc: one row per ward for the chosen date (features + pred_cases + tier + city).
+    region: the city picked in the sidebar. One region = one city, each with its own
+    stock level and crew pool (remembered while you switch between cities)."""
     F, cut, cap = meta["features"], meta["tier_cutoffs"], load_capacity()
     st.success("Running 100% locally: forecasting, allocation, routing and dispatch need "
                "no internet, no external API and no LLM.")
     cities = sorted(fc.city.unique())
 
-    # ---- regional scarcity controls: every city has its own stock and crew pool ----
-    st.subheader("Regional scarcity controls (one region = one city)")
-    settings = {}
-    for col, c in zip(st.columns(len(cities)), cities):
-        with col:
-            st.markdown(f"**{c}**")
-            s = st.slider("Available stock (%)", 30, 100, 70, key=f"ops_stock_{c}")
-            k = st.slider("Spraying crews", 0, 60, 8, key=f"ops_crews_{c}")
-        settings[c] = (s, k)
+    # ---- two sliders, for the selected city; each city keeps its own values ----
+    cfg = st.session_state.setdefault("ops_cfg", {})
+    saved = cfg.get(region, {"stock": 70, "crews": 8})
+    sk, ck = f"ops_stock_{region}", f"ops_crews_{region}"
+    st.session_state.setdefault(sk, saved["stock"])
+    st.session_state.setdefault(ck, saved["crews"])
+    c1, c2 = st.columns(2)
+    stock = c1.slider(f"Available regional stock, {region} (%)", 30, 100, key=sk)
+    crews_total = c2.slider(f"Total spraying crews, {region}", 0, 60, key=ck)
+    cfg[region] = {"stock": stock, "crews": crews_total}
 
+    settings = {c: (cfg.get(c, {"stock": 70})["stock"], cfg.get(c, {"crews": 8})["crews"])
+                for c in cities}
     alloc_all = allocate_regions(fc, cap, settings)
     wards_all, transfers_all, city_all = route_overflow(alloc_all)
 
-    glance = alloc_all.groupby("city").agg(
-        saline=("saline_allocated", "sum"), saline_req=("saline_bags_needed", "sum"),
-        kits=("kits_allocated", "sum"), kits_req=("diagnostic_kits_needed", "sum"),
-        crews=("crews_assigned", "sum"), crews_req=("crews_needed", "sum"),
-        deficit_wards=("alert", lambda s: int((s == "CRITICAL SUPPLY DEFICIT").sum())),
-    ).reset_index()
-    glance.insert(1, "stock_%", glance.city.map(lambda c: settings[c][0]))
-    glance.insert(2, "crew_pool", glance.city.map(lambda c: settings[c][1]))
-    glance = glance.merge(city_all[["city", "utilization_pct", "unplaced"]], on="city")
-    st.caption("All regions at a glance")
-    st.dataframe(glance.rename(columns={"utilization_pct": "bed_util_%",
-                                        "unplaced": "beds_unplaced"}), hide_index=True)
-
-    region = st.selectbox("View region", cities, key="ops_region")
-    stock, crews_total = settings[region]
     alloc = alloc_all[alloc_all.city == region]
     fc_r = fc[fc.city == region].reset_index(drop=True)
+
+
 
     t1, t2, t3, t4 = st.tabs(["1 Allocation", "2 Overflow routing",
                               "3 What-if simulator", "4 Dispatch"])

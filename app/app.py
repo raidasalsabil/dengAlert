@@ -210,4 +210,4 @@ with tab3:
 
     # ---------------- Tab 4: operations (Phase 2) ----------------
 with tab4:
-    render_ops(snapshot(scored, sel_ts), model, meta, str(sel_date))
+    render_ops(snapshot(scored, sel_ts), model, meta, str(sel_date), city)
