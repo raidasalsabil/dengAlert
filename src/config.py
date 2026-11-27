@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-CAPACITY_XLSX = ROOT / "data" / "raw" / "bed_capacity_wardwise.xlsx"
+CAPACITY_XLSX = ROOT / "data" / "raw" / "bed_capacity_wardwise_scarce.xlsx"
 CALIBRATION_JSON = ROOT / "models" / "calibration.json"
 
 # ---- Data-derived constants: produced by `python -m src.calibrate` ----
