@@ -18,6 +18,8 @@ import xgboost as xgb
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from src.risk import TIERS, to_tier  # noqa: E402
+from src.forecast import snapshot  # noqa: E402
+from app.ops_ui import render_ops  # noqa: E402
 
 MODEL_PATH = ROOT / "models" / "model.joblib"
 META_PATH = ROOT / "models" / "meta.json"
@@ -115,8 +117,8 @@ row = ward_rows[ward_rows["date"] == sel_ts]
 pred = float(row["pred"].iloc[0])
 tier = str(row["tier"].iloc[0])
 
-tab1, tab2, tab3 = st.tabs(["Ward forecast", "City overview", "Model accuracy"])
-
+tab1, tab2, tab3, tab4 = st.tabs(["Ward forecast", "City overview", "Model accuracy",
+                                  "Operations command"])
 # ---------------- Tab 1: forecast + drivers ----------------
 with tab1:
     start, end = sel_ts + pd.Timedelta(weeks=2), sel_ts + pd.Timedelta(weeks=4)
@@ -205,3 +207,7 @@ with tab3:
                          "MAE": round(m["MAE"], 2), "RMSE": round(m["RMSE"], 2)})
     st.dataframe(pd.DataFrame(rows), hide_index=True)
     st.caption("MAE/RMSE are in cases per 2-4 week window per ward. Lower is better.")
+
+    # ---------------- Tab 4: operations (Phase 2) ----------------
+with tab4:
+    render_ops(snapshot(scored, sel_ts), model, meta, str(sel_date))
