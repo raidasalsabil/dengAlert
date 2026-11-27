@@ -1,0 +1,110 @@
+*Dengue Dispatch: DSCC_Ward_04, Dhaka South*
+_Forecast from 2025-06-16, window +2 to +4 weeks_
+Risk: *Critical*
+Predicted cases: 57
+Saline: 137 allocated / 137 required
+Test kits: 67 / 67
+Beds: 6 / 6
+Spray teams assigned: 3 (required 3)
+
+------
+
+*Dengue Dispatch: DNCC_Ward_12, Dhaka North*
+_Forecast from 2025-06-16, window +2 to +4 weeks_
+🔴 *BED SURGE - ROUTE OVERFLOW* (beds)
+Risk: *Critical*
+Predicted cases: 54
+Saline: 128 allocated / 128 required
+Test kits: 63 / 63
+Beds: 2 / 6
+Spray teams assigned: 3 (required 3)
+
+------
+
+*Dengue Dispatch: CCC_Ward_03, Chattogram*
+_Forecast from 2025-06-16, window +2 to +4 weeks_
+Risk: *Critical*
+Predicted cases: 56
+Saline: 133 allocated / 133 required
+Test kits: 65 / 65
+Beds: 6 / 6
+Spray teams assigned: 3 (required 3)
+
+------
+
+*Dengue Dispatch: CCC_Ward_01, Chattogram*
+_Forecast from 2025-06-16, window +2 to +4 weeks_
+Risk: *Critical*
+Predicted cases: 55
+Saline: 132 allocated / 132 required
+Test kits: 65 / 65
+Beds: 6 / 6
+Spray teams assigned: 3 (required 3)
+
+------
+
+*Dengue Dispatch: DNCC_Ward_18, Dhaka North*
+_Forecast from 2025-06-16, window +2 to +4 weeks_
+🔴 *BED SURGE - ROUTE OVERFLOW* (beds)
+Risk: *Critical*
+Predicted cases: 55
+Saline: 132 allocated / 132 required
+Test kits: 65 / 65
+Beds: 2 / 6
+Spray teams assigned: 3 (required 3)
+
+------
+
+*Dengue Dispatch: DSCC_Ward_06, Dhaka South*
+_Forecast from 2025-06-16, window +2 to +4 weeks_
+Risk: *Critical*
+Predicted cases: 53
+Saline: 127 allocated / 127 required
+Test kits: 62 / 62
+Beds: 6 / 6
+Spray teams assigned: 3 (required 3)
+
+------
+
+*Dengue Dispatch: DNCC_Ward_19, Dhaka North*
+_Forecast from 2025-06-16, window +2 to +4 weeks_
+🔴 *BED SURGE - ROUTE OVERFLOW* (beds)
+Risk: *Critical*
+Predicted cases: 52
+Saline: 123 allocated / 123 required
+Test kits: 60 / 60
+Beds: 1 / 6
+Spray teams assigned: 3 (required 3)
+
+------
+
+*Dengue Dispatch: DSCC_Ward_10, Dhaka South*
+_Forecast from 2025-06-16, window +2 to +4 weeks_
+Risk: *Critical*
+Predicted cases: 50
+Saline: 120 allocated / 120 required
+Test kits: 59 / 59
+Beds: 5 / 5
+Spray teams assigned: 3 (required 3)
+
+------
+
+*Dengue Dispatch: DSCC_Ward_19, Dhaka South*
+_Forecast from 2025-06-16, window +2 to +4 weeks_
+Risk: *Critical*
+Predicted cases: 50
+Saline: 119 allocated / 119 required
+Test kits: 58 / 58
+Beds: 5 / 5
+Spray teams assigned: 3 (required 3)
+
+------
+
+*Dengue Dispatch: GCC_Ward_01, Gazipur*
+_Forecast from 2025-06-16, window +2 to +4 weeks_
+Risk: *Critical*
+Predicted cases: 42
+Saline: 101 allocated / 101 required
+Test kits: 49 / 49
+Beds: 5 / 5
+Spray teams assigned: 3 (required 3)
