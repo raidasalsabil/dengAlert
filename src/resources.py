@@ -70,3 +70,13 @@ def allocate(fc: pd.DataFrame, capacity: pd.DataFrame, stock_pct: float, total_c
         items.append(", ".join(x))
     d["deficit_items"] = items
     return d
+
+def allocate_regions(fc: pd.DataFrame, capacity: pd.DataFrame, settings: dict) -> pd.DataFrame:
+    """One region = one city. settings: {city: (stock_pct, crews)}.
+    Each city allocates only from its OWN stock pool and its OWN crew pool."""
+    parts = []
+    for city, g in fc.groupby("city"):
+        stock, crews = settings.get(city, (100, 0))
+        parts.append(allocate(g.reset_index(drop=True), capacity, stock, crews))
+    out = pd.concat(parts, ignore_index=True)
+    return out.sort_values(["city", "priority"], ascending=[True, False]).reset_index(drop=True)
