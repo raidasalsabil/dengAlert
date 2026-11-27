@@ -55,8 +55,8 @@ def simulate(curve, rows: pd.DataFrame, crews: dict, cutoffs) -> pd.DataFrame:
     out["beds_before"], out["beds_after"] = b["beds"], s["beds"]
     out["beds_saved"] = b["beds"] - s["beds"]
     out["saline_saved"] = b["saline"] - s["saline"]
-    out["tier_before"] = to_tier(pd.Series(base), cutoffs).to_numpy()
-    out["tier_after"] = to_tier(pd.Series(sim), cutoffs).to_numpy()
+    out["tier_before"] = np.asarray(to_tier(base, cutoffs))
+    out["tier_after"] = np.asarray(to_tier(sim, cutoffs))
     out["roi"] = np.where(k > 0, prevented / np.maximum(k, 1), 0.0)   # cases prevented per crew
     return out.sort_values(["roi", "cases_prevented"], ascending=False)
 
